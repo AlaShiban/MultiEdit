@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="MultiEdit..c6fb8e57-fde0-4987-8e7a-5ca9b4beddcb" Version="1.3" Language="en-US" Publisher="Ala Shiban" />
+    <DisplayName>MultiEditing</DisplayName>
+    <Description xml:space="preserve">Simultaneously edit in more than one location in the editor
+
+If you've ever ran into a case where you wanted to quickly change variable names or multiple loop conditions - you can use Multi-Edit to set virtual carets that all behave the same.</Description>
+    <MoreInfo>http://visualstudiogallery.msdn.microsoft.com/2beb9705-b568-45d1-8550-751e181e3aef</MoreInfo>
+    <Icon>Assets\bmps\multiedit_32.bmp</Icon>
+    <PreviewImage>Assets\bmps\multi_preview.bmp</PreviewImage>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="11.0" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+  </Assets>
+</PackageManifest>
