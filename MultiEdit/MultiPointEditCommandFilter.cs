@@ -108,8 +108,6 @@ namespace MultiPointEdit
             }
 
             
-
-            // Need to track down the enums for these ones, might be a bit flakey so leaving those in just in case
             switch (nCmdID)
             {
                 
