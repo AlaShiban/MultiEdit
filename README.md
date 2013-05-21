@@ -16,8 +16,8 @@ Version 1.3 supports:
 * Pressing Enter / Backspacing / Deleting
 * TABing, Shift-Tabbing
 * Moving the caret around using the keyboard
-* [NEW] Pasting
-* [NEW] Intersected carets are removed
+* *[NEW]* Pasting
+* *[NEW]* Intersected carets are removed
 * Undo-ing
   
 What isn't supported:
