@@ -47,24 +47,6 @@ namespace MultiPointEdit
             {
                 switch (nCmdID)
                 {
-                    case ((uint)VSConstants.VSStd2KCmdID.ECMD_LEFTCLICK):
-                        if (Keyboard.Modifiers == ModifierKeys.Alt && m_textView.Selection.SelectedSpans.Count == 1)
-                        {
-
-                            if (m_trackList.Count == 0)
-                                AddSyncPoint(lastCaretPosition);
-                            AddSyncPoint(m_textView.Caret.Position);
-                            RedrawScreen();
-
-
-                        }
-                        else if (m_trackList.Any())
-                        {
-                            ClearSyncPoints();
-                            RedrawScreen();
-                        }
-                        lastCaretPosition = m_textView.Caret.Position;
-                        break;
                     case ((uint)VSConstants.VSStd2KCmdID.TYPECHAR):
                     case ((uint)VSConstants.VSStd2KCmdID.BACKSPACE):
                     case ((uint)VSConstants.VSStd2KCmdID.DELETEWORDRIGHT):
@@ -178,7 +160,7 @@ namespace MultiPointEdit
             
         }
 
-        public void IncrementCount(Dictionary<string, int> someDictionary, string id)
+        private void IncrementCount(Dictionary<string, int> someDictionary, string id)
         {
             if (!someDictionary.ContainsKey(id))
                 someDictionary[id] = 0;
@@ -243,7 +225,6 @@ namespace MultiPointEdit
             
         }
 
-
         public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
             if (pguidCmdGroup == typeof(VSConstants.VSStd2KCmdID).GUID)
@@ -276,6 +257,25 @@ namespace MultiPointEdit
             }
 
             return NextTarget.QueryStatus(ref pguidCmdGroup, cCmds, prgCmds, pCmdText);
+        }
+
+        public void HandleClick(bool addCursor)
+        {
+            if (addCursor && m_textView.Selection.SelectedSpans.Count == 1)
+            {
+                if (m_trackList.Count == 0)
+                    AddSyncPoint(lastCaretPosition);
+
+                AddSyncPoint(m_textView.Caret.Position);
+                RedrawScreen();
+            }
+            else if (m_trackList.Any())
+            {
+                ClearSyncPoints();
+                RedrawScreen();
+            }
+
+            lastCaretPosition = m_textView.Caret.Position;
         }
 
         internal bool Added { get; set; }

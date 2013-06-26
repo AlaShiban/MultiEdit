@@ -79,6 +79,8 @@
   <ItemGroup>
     <Compile Include="MultiPointEditCommandFilter.cs" />
     <Compile Include="MultiPointEditFilterProvider.cs" />
+    <Compile Include="MultiPointEditMouseProcessor.cs" />
+    <Compile Include="MultiPointEditMouseProcessorProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
