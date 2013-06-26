@@ -1,0 +1,10 @@
+# Build products
+[Bb]in
+[Oo]bj
+
+# User preferences
+*.user
+*.suo
+
+# Backup files
+*.bak
