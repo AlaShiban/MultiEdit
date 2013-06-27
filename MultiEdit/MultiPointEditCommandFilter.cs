@@ -67,6 +67,8 @@ namespace MultiPointEdit
                         break;
                     case ((uint)VSConstants.VSStd2KCmdID.TYPECHAR):
                     case ((uint)VSConstants.VSStd2KCmdID.BACKSPACE):
+                    case ((uint)VSConstants.VSStd2KCmdID.DELETEWORDRIGHT):
+                    case ((uint)VSConstants.VSStd2KCmdID.DELETEWORDLEFT):
                     case ((uint)VSConstants.VSStd2KCmdID.TAB):
                     case ((uint)VSConstants.VSStd2KCmdID.LEFT):
                     case ((uint)VSConstants.VSStd2KCmdID.RIGHT):
@@ -82,7 +84,8 @@ namespace MultiPointEdit
                     case ((uint)VSConstants.VSStd2KCmdID.EOL):
                     case ((uint)VSConstants.VSStd2KCmdID.RETURN):  
                     case ((uint)VSConstants.VSStd2KCmdID.BACKTAB):  
-
+                    case ((uint)VSConstants.VSStd2KCmdID.WORDPREV):
+                    case ((uint)VSConstants.VSStd2KCmdID.WORDNEXT):
 
 
                         if (m_trackList.Count > 0)
