@@ -10,17 +10,22 @@ How to use
 ===========
 ALT Click on different locations in your code to set multiple carets, and then type as you normally would.
 
-Version 1.3 supports:
+Version 1.5 supports:
 ---------------------
+* **[NEW]** Support for all languages
 * Typing
 * Pressing Enter / Backspacing / Deleting
 * TABing, Shift-Tabbing
 * Moving the caret around using the keyboard
-* *[NEW]* Pasting
-* *[NEW]* Intersected carets are removed
+* Pasting
+* Intersected carets are removed
 * Undo-ing
   
 What isn't supported:
 ---------------------
 * Multiple selections
 * Virtual Spaces
+
+Special Thanks
+-------------------
+Thanks to [Xavier Poinas](https://github.com/xps) for adding support to all languages other than C# (and teaching me something new)
