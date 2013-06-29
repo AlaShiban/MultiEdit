@@ -16,7 +16,7 @@ namespace MultiPointEdit
 {
     [Export(typeof(IVsTextViewCreationListener))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.Editable)]
     internal class MultiPointEditFilterProvider : IVsTextViewCreationListener
     {
         [Export(typeof(AdornmentLayerDefinition))]
@@ -32,10 +32,10 @@ namespace MultiPointEdit
             IWpfTextView textView = editorFactory.GetWpfTextView(textViewAdapter);
 
             if (textView != null)
-                AddCommandFilter(textViewAdapter, new MultiPointEditCommandFilter(textView)); 
+                AddCommandFilter(textViewAdapter, textView, new MultiPointEditCommandFilter(textView)); 
         }
 
-        private void AddCommandFilter(IVsTextView viewAdapter, MultiPointEditCommandFilter commandFilter)
+        private void AddCommandFilter(IVsTextView viewAdapter, IWpfTextView textView, MultiPointEditCommandFilter commandFilter)
         {
             if (commandFilter.Added == false)
             {
@@ -45,6 +45,7 @@ namespace MultiPointEdit
                 if (result == VSConstants.S_OK)
                 {
                     commandFilter.Added = true;
+                    textView.Properties.AddProperty(typeof(MultiPointEditCommandFilter), commandFilter);
 
                     if (next != null)
                     {
