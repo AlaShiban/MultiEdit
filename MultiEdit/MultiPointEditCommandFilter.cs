@@ -209,7 +209,7 @@ namespace MultiPointEdit
             // Check if the bounds are valid
 
             if (curTrackPoint.GetPosition(m_textView.TextSnapshot) >= 0)
-                
+
                 m_trackList.Add(curTrackPoint);
             else
             {
@@ -220,8 +220,8 @@ namespace MultiPointEdit
             if (curPosition.VirtualSpaces > 0)
             {
                 m_textView.Caret.MoveTo(curTrackPoint.GetPoint(m_textView.TextSnapshot));
-                
             }
+        }
             
 
         private void AddSyncPoint(int position)
