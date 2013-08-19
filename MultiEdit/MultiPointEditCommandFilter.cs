@@ -209,7 +209,7 @@ namespace MultiPointEdit
             // Check if the bounds are valid
 
             if (curTrackPoint.GetPosition(m_textView.TextSnapshot) >= 0)
-                
+
                 m_trackList.Add(curTrackPoint);
             else
             {
@@ -220,9 +220,13 @@ namespace MultiPointEdit
             if (curPosition.VirtualSpaces > 0)
             {
                 m_textView.Caret.MoveTo(curTrackPoint.GetPoint(m_textView.TextSnapshot));
-                
             }
+        }
             
+
+        private void AddSyncPoint(int position)
+        {
+            m_trackList.Add(m_textView.TextSnapshot.CreateTrackingPoint(Math.Max(position, 0), PointTrackingMode.Positive));
         }
 
         public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
@@ -261,13 +265,24 @@ namespace MultiPointEdit
 
         public void HandleClick(bool addCursor)
         {
-            if (addCursor && m_textView.Selection.SelectedSpans.Count == 1)
+            if (addCursor && m_textView.Selection.SelectedSpans.All(span => span.Length == 0))
             {
-                if (m_trackList.Count == 0)
-                    AddSyncPoint(lastCaretPosition);
+                if (m_textView.Selection.SelectedSpans.Count == 1)
+                {
+                    if (m_trackList.Count == 0)
+                        AddSyncPoint(lastCaretPosition);
 
-                AddSyncPoint(m_textView.Caret.Position);
-                RedrawScreen();
+                    AddSyncPoint(m_textView.Caret.Position);
+                    RedrawScreen();
+                }
+                else
+                {
+                    foreach (var span in m_textView.Selection.SelectedSpans)
+                        AddSyncPoint(span.Start.Position);
+
+                    m_textView.Selection.Clear();
+                    RedrawScreen();
+                }
             }
             else if (m_trackList.Any())
             {
