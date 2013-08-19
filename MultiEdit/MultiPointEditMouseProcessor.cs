@@ -13,13 +13,12 @@ namespace MultiPointEdit
             this.wpfTextView = wpfTextView;
         }
 
-        public void PostprocessMouseLeftButtonDown(MouseButtonEventArgs e)
+        public void PostprocessMouseLeftButtonUp(MouseButtonEventArgs e)
         {
             var commandFilter = wpfTextView.Properties.GetProperty<MultiPointEditCommandFilter>(typeof(MultiPointEditCommandFilter));
             if (commandFilter != null)
             {
                 commandFilter.HandleClick(Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt));
-                e.Handled = true;
             }
         }
 
@@ -65,7 +64,7 @@ namespace MultiPointEdit
             
         }
 
-        public void PostprocessMouseLeftButtonUp(MouseButtonEventArgs e)
+        public void PostprocessMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             
         }
