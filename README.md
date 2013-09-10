@@ -1,4 +1,4 @@
-MultiEditing for Visual Studio 2012
+MultiEditing for Visual Studio 2012/2013
 ===================================
 Simultaneously edit in more than one location in the editor
 
@@ -10,9 +10,10 @@ How to use
 ===========
 ALT Click on different locations in your code to set multiple carets, and then type as you normally would.
 
-Version 1.5 supports:
+Version 1.6 supports:
 ---------------------
-* **[NEW]** Support for all languages
+* **[NEW]** Better integration with Ctrl+Alt+Drag (column selection mode)
+* Support for all languages
 * Typing
 * Pressing Enter / Backspacing / Deleting
 * TABing, Shift-Tabbing
