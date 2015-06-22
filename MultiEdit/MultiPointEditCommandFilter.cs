@@ -21,7 +21,7 @@ namespace MultiPointEdit
         private IWpfTextView m_textView;
         private IAdornmentLayer m_adornmentLayer;
         private List<ITrackingPoint> m_trackList;
-        private CaretPosition lastCaretPosition = new CaretPosition();
+        private CaretPosition m_lastCaretPosition = new CaretPosition();
         private DTE2 m_dte;
         private Dictionary<string, int> positionHash = new Dictionary<string, int>();
         public MultiPointEditCommandFilter(IWpfTextView tv)
@@ -29,7 +29,7 @@ namespace MultiPointEdit
             m_textView = tv;
             m_adornmentLayer = tv.GetAdornmentLayer("MultiEditLayer");
             m_trackList = new List<ITrackingPoint>();
-            lastCaretPosition = m_textView.Caret.Position;
+            m_lastCaretPosition = m_textView.Caret.Position;
             m_textView.LayoutChanged += m_textView_LayoutChanged;
             m_dte = ServiceProvider.GlobalProvider.GetService(typeof(DTE)) as DTE2;
         }
@@ -43,6 +43,8 @@ namespace MultiPointEdit
         {
             Debug.WriteLine(nCmdID);
 
+            bool trackListNonEmpty = m_trackList.Count > 0;
+            bool performSyncedOp = false;
             if (pguidCmdGroup == typeof(VSConstants.VSStd2KCmdID).GUID)
             {
                 switch (nCmdID)
@@ -64,14 +66,32 @@ namespace MultiPointEdit
                     case ((uint)VSConstants.VSStd2KCmdID.PASTEASHTML):
                     case ((uint)VSConstants.VSStd2KCmdID.BOL):
                     case ((uint)VSConstants.VSStd2KCmdID.EOL):
-                    case ((uint)VSConstants.VSStd2KCmdID.RETURN):  
-                    case ((uint)VSConstants.VSStd2KCmdID.BACKTAB):  
+                    case ((uint)VSConstants.VSStd2KCmdID.RETURN):
+                    case ((uint)VSConstants.VSStd2KCmdID.BACKTAB):
                     case ((uint)VSConstants.VSStd2KCmdID.WORDPREV):
                     case ((uint)VSConstants.VSStd2KCmdID.WORDNEXT):
-
-
-                        if (m_trackList.Count > 0)
-                            return SyncedOperation(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+                        performSyncedOp = trackListNonEmpty;
+                        break;
+                    case ((uint)VSConstants.VSStd2KCmdID.UP_EXT_COL):
+                    case ((uint)VSConstants.VSStd2KCmdID.DOWN_EXT_COL):
+                        // Allow expanding track list vertically but only if there isn't any prior
+                        // horizontal selection. This effectively means that if the block selection is
+                        // started with vertical extension we will use Multi Edit, but if it is started
+                        // with horizontal extension we will use the old-school behavior.
+                        performSyncedOp = m_textView.Selection.SelectedSpans.All(span => span.Length == 0);
+                        break;
+                    case ((uint)VSConstants.VSStd2KCmdID.LEFT_EXT):
+                    case ((uint)VSConstants.VSStd2KCmdID.RIGHT_EXT):
+                    case ((uint)VSConstants.VSStd2KCmdID.CANCEL):
+                    case ((uint)VSConstants.VSStd2KCmdID.LEFT_EXT_COL):
+                    case ((uint)VSConstants.VSStd2KCmdID.RIGHT_EXT_COL):
+                        if (trackListNonEmpty)
+                        {
+                            // Break out of the Multi Edit mode when (unsupported) horizontal
+                            // selection or ESC is used.
+                            ClearSyncPoints();
+                            RedrawScreen();
+                        }
                         break;
                     default:
                         break;
@@ -83,50 +103,44 @@ namespace MultiPointEdit
                 {
 
                     case ((uint)VSConstants.VSStd97CmdID.Delete):
-                    case ((uint)VSConstants.VSStd97CmdID.Paste):                    
-                        if (m_trackList.Count > 0)
-                            return SyncedOperation(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+                    case ((uint)VSConstants.VSStd97CmdID.Paste):
+                        performSyncedOp = trackListNonEmpty;
                         break;
                     default:
                         break;
                 }
             }
-
-            
-            switch (nCmdID)
-            {
-                
-                // When ESC is used, cancel the Multi Edit mode
-                case ((uint)VSConstants.VSStd2KCmdID.CANCEL):
-                    ClearSyncPoints();
-                    RedrawScreen();
-                    break;
-                default:
-                    break;
-            }
-
-            return NextTarget.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+            if (performSyncedOp)
+                return SyncedOperation(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+            else
+                return NextTarget.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
         }
 
         private int SyncedOperation(ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
-        {   
-
+        {
             ITextCaret caret = m_textView.Caret;
+
+            if (m_trackList.Count == 0)
+                AddSyncPoint(caret.Position);
+
             var tempTrackList = m_trackList;
             m_trackList = new List<ITrackingPoint>();
 
-            SnapshotPoint snapPoint = tempTrackList[0].GetPoint(m_textView.TextSnapshot);
             int result = 0;
 
             m_dte.UndoContext.Open("Multi-point edit");
 
             for (int i = 0; i < tempTrackList.Count; i++)
             {
-                snapPoint = tempTrackList[i].GetPoint(m_textView.TextSnapshot);
+                SnapshotPoint snapPoint = tempTrackList[i].GetPoint(m_textView.TextSnapshot);
                 caret.MoveTo(snapPoint);
                 Debug.Print("Caret #" + i + " pos : " + caret.Position);
                 result = NextTarget.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
-                AddSyncPoint(m_textView.Caret.Position);
+                if (pguidCmdGroup == typeof(VSConstants.VSStd2KCmdID).GUID &&
+                    (nCmdID == (uint)VSConstants.VSStd2KCmdID.UP_EXT_COL || nCmdID == (uint)VSConstants.VSStd2KCmdID.DOWN_EXT_COL))
+                    AddSyncPointsFromSelections();
+                else
+                    AddSyncPoint(m_textView.Caret.Position);
             }
 
             m_dte.UndoContext.Close();
@@ -151,13 +165,13 @@ namespace MultiPointEdit
                 var curPosition = trackPoint.GetPosition(m_textView.TextSnapshot);
                 IncrementCount(positionHash, curPosition.ToString());
                 if (positionHash[curPosition.ToString()] > 1)
-                    continue;                
+                    continue;
                 DrawSingleSyncPoint(trackPoint);
                 newTrackList.Add(trackPoint);
             }
 
             m_trackList = newTrackList;
-            
+
         }
 
         private void IncrementCount(Dictionary<string, int> someDictionary, string id)
@@ -195,11 +209,6 @@ namespace MultiPointEdit
 
         }
 
-        private void RemoveIntersectedCarets()
-        {
-
-        }
-
         private void AddSyncPoint(CaretPosition caretPosition)
         {
             CaretPosition curPosition = caretPosition;
@@ -209,7 +218,6 @@ namespace MultiPointEdit
             // Check if the bounds are valid
 
             if (curTrackPoint.GetPosition(m_textView.TextSnapshot) >= 0)
-
                 m_trackList.Add(curTrackPoint);
             else
             {
@@ -222,11 +230,17 @@ namespace MultiPointEdit
                 m_textView.Caret.MoveTo(curTrackPoint.GetPoint(m_textView.TextSnapshot));
             }
         }
-            
 
         private void AddSyncPoint(int position)
         {
             m_trackList.Add(m_textView.TextSnapshot.CreateTrackingPoint(Math.Max(position, 0), PointTrackingMode.Positive));
+        }
+
+        private void AddSyncPointsFromSelections()
+        {
+            foreach (var span in m_textView.Selection.SelectedSpans)
+                AddSyncPoint(span.Start.Position);
+            m_textView.Selection.Clear();
         }
 
         public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
@@ -239,6 +253,8 @@ namespace MultiPointEdit
                     {
                         case ((uint)VSConstants.VSStd2KCmdID.TYPECHAR):
                         case ((uint)VSConstants.VSStd2KCmdID.BACKSPACE):
+                        case ((uint)VSConstants.VSStd2KCmdID.DELETEWORDRIGHT):
+                        case ((uint)VSConstants.VSStd2KCmdID.DELETEWORDLEFT):
                         case ((uint)VSConstants.VSStd2KCmdID.TAB):
                         case ((uint)VSConstants.VSStd2KCmdID.LEFT):
                         case ((uint)VSConstants.VSStd2KCmdID.RIGHT):
@@ -253,7 +269,16 @@ namespace MultiPointEdit
                         case ((uint)VSConstants.VSStd2KCmdID.BOL):
                         case ((uint)VSConstants.VSStd2KCmdID.EOL):
                         case ((uint)VSConstants.VSStd2KCmdID.RETURN):
-                        case ((uint)VSConstants.VSStd2KCmdID.BACKTAB): 
+                        case ((uint)VSConstants.VSStd2KCmdID.BACKTAB):
+                        case ((uint)VSConstants.VSStd2KCmdID.WORDPREV):
+                        case ((uint)VSConstants.VSStd2KCmdID.WORDNEXT):
+                        case ((uint)VSConstants.VSStd2KCmdID.UP_EXT_COL):
+                        case ((uint)VSConstants.VSStd2KCmdID.DOWN_EXT_COL):
+                        case ((uint)VSConstants.VSStd2KCmdID.LEFT_EXT):
+                        case ((uint)VSConstants.VSStd2KCmdID.RIGHT_EXT):
+                        case ((uint)VSConstants.VSStd2KCmdID.CANCEL):
+                        case ((uint)VSConstants.VSStd2KCmdID.LEFT_EXT_COL):
+                        case ((uint)VSConstants.VSStd2KCmdID.RIGHT_EXT_COL):
                             prgCmds[i].cmdf = (uint)(OLECMDF.OLECMDF_ENABLED | OLECMDF.OLECMDF_SUPPORTED);
                             return VSConstants.S_OK;
                     }
@@ -270,19 +295,13 @@ namespace MultiPointEdit
                 if (m_textView.Selection.SelectedSpans.Count == 1)
                 {
                     if (m_trackList.Count == 0)
-                        AddSyncPoint(lastCaretPosition);
+                        AddSyncPoint(m_lastCaretPosition);
 
                     AddSyncPoint(m_textView.Caret.Position);
-                    RedrawScreen();
                 }
                 else
-                {
-                    foreach (var span in m_textView.Selection.SelectedSpans)
-                        AddSyncPoint(span.Start.Position);
-
-                    m_textView.Selection.Clear();
-                    RedrawScreen();
-                }
+                    AddSyncPointsFromSelections();
+                RedrawScreen();
             }
             else if (m_trackList.Any())
             {
@@ -290,7 +309,7 @@ namespace MultiPointEdit
                 RedrawScreen();
             }
 
-            lastCaretPosition = m_textView.Caret.Position;
+            m_lastCaretPosition = m_textView.Caret.Position;
         }
 
         internal bool Added { get; set; }
